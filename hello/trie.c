@@ -65,6 +65,15 @@ void HelloTrieType_Digest(RedisModuleDigest *digest, void *value) {
 }
 
 void HelloTrieType_Free(void *value) {
+  struct TrieTypeNode *n = value;
+
+  struct TrieTypeNode** cursor = n->children;
+  while (cursor != n->children + 26) {
+    if (*cursor)
+      HelloTrieType_Free(*cursor);
+  }
+  RedisModule_Free(n->children);
+  RedisModule_Free(n);
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
