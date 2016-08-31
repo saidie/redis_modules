@@ -2,6 +2,11 @@
 
 static RedisModuleType *TrieType;
 
+struct TrieTypeNode {
+  int8_t terminal;
+  struct TrieTypeNode* children;
+};
+
 void *HelloTrieType_Load(RedisModuleIO *rdb, int encver) {
 }
 
