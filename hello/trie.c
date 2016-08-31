@@ -1,6 +1,7 @@
 #include <redismodule.h>
 
 static RedisModuleType *TrieType;
+static char buffer[1024];
 
 struct TrieTypeNode {
   uint8_t terminal;
