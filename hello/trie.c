@@ -35,6 +35,27 @@ void *HelloTrieType_Load(RedisModuleIO *rdb, int encver) {
 }
 
 void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
+  struct TrieTypeNode *n = value;
+
+  uint64_t u;
+  struct TrieTypeNode** cursor = n->children + 26;
+  while (cursor != n->children) {
+    --cursor;
+    if (*cursor)
+      u |= 1;
+    u <<= 1;
+  }
+  u |= n->terminal;
+
+  RedisModule_SaveUnsigned(rdb, u);
+
+  u >>= 1;
+  while(u) {
+    if (u & 1)
+      HelloTrieType_Save(rdb, *cursor);
+    ++cursor;
+    u >>= 1;
+  }
 }
 
 void HelloTrieType_Rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
