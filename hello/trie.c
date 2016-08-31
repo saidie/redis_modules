@@ -71,6 +71,7 @@ void HelloTrieType_Free(void *value) {
   while (cursor != n->children + 26) {
     if (*cursor)
       HelloTrieType_Free(*cursor);
+    ++cursor;
   }
   RedisModule_Free(n->children);
   RedisModule_Free(n);
