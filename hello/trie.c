@@ -59,7 +59,26 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
   }
 }
 
+void dfs(RedisModuleIO *aof, RedisModuleString *key, struct TrieTypeNode *n, int depth) {
+  if (n->terminal && depth > 0) {
+    buffer[depth] = '\0';
+    RedisModule_EmitAOF(aof, "hello.trie.add", "sc", key, buffer);
+  }
+
+  struct TrieTypeNode** cursor = n->children;
+  char ch = 'a';
+  while (cursor != n->children + 26) {
+    if (*cursor) {
+      buffer[depth] = ch;
+      dfs(aof, key, *cursor, depth+1);
+    }
+    ++cursor;
+    ++ch;
+  }
+}
+
 void HelloTrieType_Rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
+  dfs(aof, key, value, 0);
 }
 
 void HelloTrieType_Digest(RedisModuleDigest *digest, void *value) {
