@@ -7,7 +7,31 @@ struct TrieTypeNode {
   struct TrieTypeNode* children[26];
 };
 
+void recur(RedisModuleIO *rdb, struct TrieTypeNode *n) {
+  uint64_t u = RedisModule_LoadUnsigned(rdb);
+  n->terminal = u & 1;
+  u >>= 1;
+  if (u) {
+    struct TrieTypeNode** cursor = n->children;
+    while (u) {
+      if (u & 1) {
+        *cursor = RedisModule_Calloc(1, sizeof(**cursor));
+        recur(rdb, *cursor);
+      }
+      ++cursor;
+      u >>= 1;
+    }
+  }
+}
+
 void *HelloTrieType_Load(RedisModuleIO *rdb, int encver) {
+  if (encver != 0)
+    return NULL;
+
+  struct TrieTypeNode *n;
+  n = RedisModule_Calloc(1, sizeof(*n));
+  recur(rdb, n);
+  return n;
 }
 
 void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
