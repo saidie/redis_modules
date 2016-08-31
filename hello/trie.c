@@ -3,7 +3,7 @@
 static RedisModuleType *TrieType;
 
 struct TrieTypeNode {
-  int8_t terminal;
+  uint8_t terminal;
   struct TrieTypeNode* children;
 };
 
