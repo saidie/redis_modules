@@ -31,6 +31,11 @@ struct TrieTypeNode *TrieTypeSearch(struct TrieTypeNode *n, const char *word) {
   return n;
 }
 
+int TrieTypeExist(struct TrieTypeNode *n, const char *word) {
+  n = TrieTypeSearch(n, word);
+  return n && n->terminal;
+}
+
 void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, struct TrieTypeNode *n) {
   RedisModule_StringAppendBuffer(ctx, str, "(", 1);
   if (n->terminal) RedisModule_StringAppendBuffer(ctx, str, "$", 1);
