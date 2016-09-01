@@ -20,6 +20,17 @@ void TrieTypeInsert(struct TrieTypeNode *n, const char *word) {
   n->terminal = 1;
 }
 
+struct TrieTypeNode *TrieTypeSearch(struct TrieTypeNode *n, const char *word) {
+  while (*word) {
+    uint8_t i = *word - 'a';
+    if (!n->children[i])
+      return NULL;
+    n = n->children[i];
+    ++word;
+  }
+  return n;
+}
+
 void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, struct TrieTypeNode *n) {
   RedisModule_StringAppendBuffer(ctx, str, "(", 1);
   if (n->terminal) RedisModule_StringAppendBuffer(ctx, str, "$", 1);
