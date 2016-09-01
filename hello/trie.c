@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <redismodule.h>
 
 static RedisModuleType *TrieType;
@@ -17,6 +18,22 @@ void TrieTypeInsert(struct TrieTypeNode *n, const char *word) {
     ++word;
   }
   n->terminal = 1;
+}
+
+void TrieTypePrettyPrint(struct TrieTypeNode *n) {
+  printf("(");
+  if (n->terminal) printf("$");
+  struct TrieTypeNode** cursor = n->children;
+  char ch = 'a';
+  while (cursor != n->children + 26) {
+    if (*cursor) {
+      printf("%c", ch);
+      TrieTypePrettyPrint(*cursor);
+    }
+    ++cursor;
+    ++ch;
+  }
+  printf(")");
 }
 
 void recur(RedisModuleIO *rdb, struct TrieTypeNode *n) {
