@@ -12,7 +12,7 @@ void TrieTypeInsert(struct TrieTypeNode *n, const char *word) {
   while(*word) {
     uint8_t i = *word - 'a';
     if (!n->children[i])
-      n->children[i] = RedisModule_Calloc(1, sizeof(n->children[i]));
+      n->children[i] = RedisModule_Calloc(1, sizeof(struct TrieTypeNode));
     n = n->children[i];
     ++word;
   }
