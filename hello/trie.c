@@ -157,6 +157,36 @@ int HelloTrieAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
   return REDISMODULE_OK;
 }
 
+int HelloTriePrettyPrint_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+  if (argc != 2) return RedisModule_WrongArity(ctx);
+
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
+    REDISMODULE_READ | REDISMODULE_WRITE);
+
+  int type = RedisModule_KeyType(key);
+  if (type != REDISMODULE_KEYTYPE_EMPTY && RedisModule_ModuleTypeGetType(key) != TrieType)
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+
+  struct TrieTypeNode *n;
+  if (type == REDISMODULE_KEYTYPE_EMPTY) {
+    n = RedisModule_Calloc(1, sizeof(*n));
+    RedisModule_ModuleTypeSetValue(key, TrieType, n);
+  } else {
+    n = RedisModule_ModuleTypeGetValue(key);
+  }
+
+  RedisModuleString *str = RedisModule_CreateString(ctx, NULL, 0);
+  TrieTypePrettyPrint(ctx, str, n);
+
+  RedisModule_ReplyWithString(ctx, str);
+
+  RedisModule_FreeString(ctx, str);
+
+  RedisModule_CloseKey(key);
+
+  return REDISMODULE_OK;
+}
+
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   if (RedisModule_Init(ctx, "hello", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
