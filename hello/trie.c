@@ -20,20 +20,20 @@ void TrieTypeInsert(struct TrieTypeNode *n, const char *word) {
   n->terminal = 1;
 }
 
-void TrieTypePrettyPrint(struct TrieTypeNode *n) {
-  printf("(");
-  if (n->terminal) printf("$");
+void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, struct TrieTypeNode *n) {
+  RedisModule_StringAppendBuffer(ctx, str, "(", 1);
+  if (n->terminal) RedisModule_StringAppendBuffer(ctx, str, "$", 1);
   struct TrieTypeNode** cursor = n->children;
-  char ch = 'a';
+  char s[2] = "a";
   while (cursor != n->children + 26) {
     if (*cursor) {
-      printf("%c", ch);
-      TrieTypePrettyPrint(*cursor);
+      RedisModule_StringAppendBuffer(ctx, str, s, 1);
+      TrieTypePrettyPrint(ctx, str, *cursor);
     }
     ++cursor;
-    ++ch;
+    ++s[0];
   }
-  printf(")");
+  RedisModule_StringAppendBuffer(ctx, str, ")", 1);
 }
 
 void recur(RedisModuleIO *rdb, struct TrieTypeNode *n) {
