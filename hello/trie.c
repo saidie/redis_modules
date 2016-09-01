@@ -8,6 +8,17 @@ struct TrieTypeNode {
   struct TrieTypeNode* children[26];
 };
 
+void TrieTypeInsert(struct TrieTypeNode *n, const char *word) {
+  while(*word) {
+    uint8_t i = *word - 'a';
+    if (!n->children[i])
+      n->children[i] = RedisModule_Calloc(1, sizeof(n->children[i]));
+    n = n->children[i];
+    ++word;
+  }
+  n->terminal = 1;
+}
+
 void recur(RedisModuleIO *rdb, struct TrieTypeNode *n) {
   uint64_t u = RedisModule_LoadUnsigned(rdb);
   n->terminal = u & 1;
