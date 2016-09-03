@@ -31,6 +31,37 @@ struct TrieTypeNode *TrieTypeSearch(struct TrieTypeNode *n, const char *word) {
     return n;
 }
 
+size_t TrieTypeComplete(struct TrieTypeNode *n, const char *prefix, size_t len, char **result) {
+    size_t newlen = 0;
+
+    *result = RedisModule_Realloc(*result, sizeof(char) * (len + 1));
+    while (*prefix) {
+        int i = *prefix - 'a';
+        if (!n->children[i])
+            return 0;
+        (*result)[newlen] = *prefix;
+
+        n = n->children[i];
+        ++prefix;
+        ++newlen;
+    }
+
+    while (!n->terminal) {
+        *result = RedisModule_Realloc(*result, sizeof(char) * (newlen + 1));
+        (*result)[newlen] = 'a';
+
+        struct TrieTypeNode** cursor = n->children;
+        while (!*cursor)
+            ++cursor, ++(*result)[newlen];
+
+        n = *cursor;
+        ++newlen;
+    }
+    (*result)[newlen] = '\0';
+
+    return newlen;
+}
+
 int TrieTypeExist(struct TrieTypeNode *n, const char *word) {
     n = TrieTypeSearch(n, word);
     return n && n->terminal;
