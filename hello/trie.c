@@ -80,7 +80,7 @@ void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, TrieTypeNo
     RedisModule_StringAppendBuffer(ctx, str, ")", 1);
 }
 
-void recur(RedisModuleIO *rdb, TrieTypeNode *n) {
+void HelloTrieType_LoadRecursive(RedisModuleIO *rdb, TrieTypeNode *n) {
     uint64_t u = RedisModule_LoadUnsigned(rdb);
     n->terminal = u & 1;
     u >>= 1;
@@ -89,7 +89,7 @@ void recur(RedisModuleIO *rdb, TrieTypeNode *n) {
         while (u) {
             if (u & 1) {
                 *cursor = RedisModule_Calloc(1, sizeof(**cursor));
-                recur(rdb, *cursor);
+                HelloTrieType_LoadRecursive(rdb, *cursor);
             }
             ++cursor;
             u >>= 1;
@@ -103,7 +103,7 @@ void *HelloTrieType_Load(RedisModuleIO *rdb, int encver) {
 
     TrieTypeNode *n;
     n = RedisModule_Calloc(1, sizeof(*n));
-    recur(rdb, n);
+    HelloTrieType_LoadRecursive(rdb, n);
     return n;
 }
 
@@ -131,7 +131,7 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
     }
 }
 
-void dfs(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, int depth) {
+void HelloTrieType_RewriteRecursive(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, int depth) {
     if (n->terminal && depth > 0) {
         buffer[depth] = '\0';
         RedisModule_EmitAOF(aof, "hello.trie.add", "sc", key, buffer);
@@ -142,7 +142,7 @@ void dfs(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, int depth)
     while (cursor != n->children + 26) {
         if (*cursor) {
             buffer[depth] = ch;
-            dfs(aof, key, *cursor, depth+1);
+            HelloTrieType_RewriteRecursive(aof, key, *cursor, depth+1);
         }
         ++cursor;
         ++ch;
@@ -150,7 +150,7 @@ void dfs(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, int depth)
 }
 
 void HelloTrieType_Rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-    dfs(aof, key, value, 0);
+    HelloTrieType_RewriteRecursive(aof, key, value, 0);
 }
 
 void HelloTrieType_Digest(RedisModuleDigest *digest, void *value) {
