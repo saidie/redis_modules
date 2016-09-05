@@ -133,7 +133,7 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
 void HelloTrieType_RewriteRecursive(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, int depth) {
     if (n->terminal && depth > 0) {
         buffer[depth] = '\0';
-        RedisModule_EmitAOF(aof, "hello.trie.add", "sc", key, buffer);
+        RedisModule_EmitAOF(aof, "hello.trie.insert", "sc", key, buffer);
     }
 
     TrieTypeNode** cursor = n->children;
@@ -168,7 +168,7 @@ void HelloTrieType_Free(void *value) {
     RedisModule_Free(n);
 }
 
-int HelloTrieAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int HelloTrieInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 3) return RedisModule_WrongArity(ctx);
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
@@ -306,8 +306,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if (TrieType == NULL)
         return REDISMODULE_ERR;
 
-    if (RedisModule_CreateCommand(ctx, "hello.trie.add",
-            HelloTrieAdd_RedisCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR)
+    if (RedisModule_CreateCommand(ctx, "hello.trie.insert",
+            HelloTrieInsert_RedisCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx, "hello.trie.pp",
