@@ -84,16 +84,15 @@ void HelloTrieType_LoadRecursive(RedisModuleIO *rdb, TrieTypeNode *n) {
     uint64_t u = RedisModule_LoadUnsigned(rdb);
     n->terminal = u & 1;
     u >>= 1;
-    if (u) {
-        TrieTypeNode** cursor = n->children;
-        while (u) {
-            if (u & 1) {
-                *cursor = RedisModule_Calloc(1, sizeof(**cursor));
-                HelloTrieType_LoadRecursive(rdb, *cursor);
-            }
-            ++cursor;
-            u >>= 1;
+
+    TrieTypeNode** cursor = n->children;
+    while (u) {
+        if (u & 1) {
+            *cursor = RedisModule_Calloc(1, sizeof(**cursor));
+            HelloTrieType_LoadRecursive(rdb, *cursor);
         }
+        ++cursor;
+        u >>= 1;
     }
 }
 
