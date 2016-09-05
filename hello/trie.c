@@ -4,23 +4,23 @@
 static RedisModuleType *TrieType;
 static char buffer[1024];
 
-struct TrieTypeNode {
+typedef struct TrieTypeNode {
     uint8_t terminal;
     struct TrieTypeNode* children[26];
-};
+} TrieTypeNode;
 
-void TrieTypeInsert(struct TrieTypeNode *n, const char *word) {
+void TrieTypeInsert(TrieTypeNode *n, const char *word) {
     while(*word) {
         uint8_t i = *word - 'a';
         if (!n->children[i])
-            n->children[i] = RedisModule_Calloc(1, sizeof(struct TrieTypeNode));
+            n->children[i] = RedisModule_Calloc(1, sizeof(TrieTypeNode));
         n = n->children[i];
         ++word;
     }
     n->terminal = 1;
 }
 
-struct TrieTypeNode *TrieTypeSearch(struct TrieTypeNode *n, const char *word) {
+TrieTypeNode *TrieTypeSearch(TrieTypeNode *n, const char *word) {
     while (*word) {
         uint8_t i = *word - 'a';
         if (!n->children[i])
@@ -31,7 +31,7 @@ struct TrieTypeNode *TrieTypeSearch(struct TrieTypeNode *n, const char *word) {
     return n;
 }
 
-size_t TrieTypeComplete(struct TrieTypeNode *n, const char *prefix, size_t len, char **result) {
+size_t TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char **result) {
     size_t newlen = 0;
 
     *result = RedisModule_Realloc(*result, sizeof(char) * (len + 1));
@@ -50,7 +50,7 @@ size_t TrieTypeComplete(struct TrieTypeNode *n, const char *prefix, size_t len, 
         *result = RedisModule_Realloc(*result, sizeof(char) * (newlen + 1));
         (*result)[newlen] = 'a';
 
-        struct TrieTypeNode** cursor = n->children;
+        TrieTypeNode** cursor = n->children;
         while (!*cursor)
             ++cursor, ++(*result)[newlen];
 
@@ -62,15 +62,15 @@ size_t TrieTypeComplete(struct TrieTypeNode *n, const char *prefix, size_t len, 
     return newlen;
 }
 
-int TrieTypeExist(struct TrieTypeNode *n, const char *word) {
+int TrieTypeExist(TrieTypeNode *n, const char *word) {
     n = TrieTypeSearch(n, word);
     return n && n->terminal;
 }
 
-void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, struct TrieTypeNode *n) {
+void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, TrieTypeNode *n) {
     RedisModule_StringAppendBuffer(ctx, str, "(", 1);
     if (n->terminal) RedisModule_StringAppendBuffer(ctx, str, "$", 1);
-    struct TrieTypeNode** cursor = n->children;
+    TrieTypeNode** cursor = n->children;
     char s[2] = "a";
     while (cursor != n->children + 26) {
         if (*cursor) {
@@ -83,12 +83,12 @@ void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, struct Tri
     RedisModule_StringAppendBuffer(ctx, str, ")", 1);
 }
 
-void recur(RedisModuleIO *rdb, struct TrieTypeNode *n) {
+void recur(RedisModuleIO *rdb, TrieTypeNode *n) {
     uint64_t u = RedisModule_LoadUnsigned(rdb);
     n->terminal = u & 1;
     u >>= 1;
     if (u) {
-        struct TrieTypeNode** cursor = n->children;
+        TrieTypeNode** cursor = n->children;
         while (u) {
             if (u & 1) {
                 *cursor = RedisModule_Calloc(1, sizeof(**cursor));
@@ -104,17 +104,17 @@ void *HelloTrieType_Load(RedisModuleIO *rdb, int encver) {
     if (encver != 0)
         return NULL;
 
-    struct TrieTypeNode *n;
+    TrieTypeNode *n;
     n = RedisModule_Calloc(1, sizeof(*n));
     recur(rdb, n);
     return n;
 }
 
 void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
-    struct TrieTypeNode *n = value;
+    TrieTypeNode *n = value;
 
     uint64_t u;
-    struct TrieTypeNode** cursor = n->children + 26;
+    TrieTypeNode** cursor = n->children + 26;
     while (cursor != n->children) {
         --cursor;
         if (*cursor)
@@ -134,13 +134,13 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
     }
 }
 
-void dfs(RedisModuleIO *aof, RedisModuleString *key, struct TrieTypeNode *n, int depth) {
+void dfs(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, int depth) {
     if (n->terminal && depth > 0) {
         buffer[depth] = '\0';
         RedisModule_EmitAOF(aof, "hello.trie.add", "sc", key, buffer);
     }
 
-    struct TrieTypeNode** cursor = n->children;
+    TrieTypeNode** cursor = n->children;
     char ch = 'a';
     while (cursor != n->children + 26) {
         if (*cursor) {
@@ -160,9 +160,9 @@ void HelloTrieType_Digest(RedisModuleDigest *digest, void *value) {
 }
 
 void HelloTrieType_Free(void *value) {
-    struct TrieTypeNode *n = value;
+    TrieTypeNode *n = value;
 
-    struct TrieTypeNode** cursor = n->children;
+    TrieTypeNode** cursor = n->children;
     while (cursor != n->children + 26) {
         if (*cursor)
             HelloTrieType_Free(*cursor);
@@ -182,7 +182,7 @@ int HelloTrieAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     if (type != REDISMODULE_KEYTYPE_EMPTY && RedisModule_ModuleTypeGetType(key) != TrieType)
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
 
-    struct TrieTypeNode *n;
+    TrieTypeNode *n;
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
         n = RedisModule_Calloc(1, sizeof(*n));
         RedisModule_ModuleTypeSetValue(key, TrieType, n);
@@ -214,7 +214,7 @@ int HelloTriePrettyPrint_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
     if (type != REDISMODULE_KEYTYPE_EMPTY && RedisModule_ModuleTypeGetType(key) != TrieType)
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
 
-    struct TrieTypeNode *n;
+    TrieTypeNode *n;
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
         n = RedisModule_Calloc(1, sizeof(*n));
         RedisModule_ModuleTypeSetValue(key, TrieType, n);
@@ -244,7 +244,7 @@ int HelloTrieExist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     if (type != REDISMODULE_KEYTYPE_EMPTY && RedisModule_ModuleTypeGetType(key) != TrieType)
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
 
-    struct TrieTypeNode *n;
+    TrieTypeNode *n;
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
         n = RedisModule_Calloc(1, sizeof(*n));
         RedisModule_ModuleTypeSetValue(key, TrieType, n);
@@ -275,7 +275,7 @@ int HelloTrieComplete_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     if (type != REDISMODULE_KEYTYPE_EMPTY && RedisModule_ModuleTypeGetType(key) != TrieType)
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
 
-    struct TrieTypeNode *n;
+    TrieTypeNode *n;
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
         RedisModule_ReplyWithNull(ctx);
     } else {
