@@ -203,23 +203,19 @@ int HelloTrieInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 int HelloTriePrettyPrint_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 2) return RedisModule_WrongArity(ctx);
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
-        REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
     int type = RedisModule_KeyType(key);
     if (type != REDISMODULE_KEYTYPE_EMPTY && RedisModule_ModuleTypeGetType(key) != TrieType)
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
 
     TrieTypeNode *n;
-    if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        n = RedisModule_Calloc(1, sizeof(*n));
-        RedisModule_ModuleTypeSetValue(key, TrieType, n);
-    } else {
-        n = RedisModule_ModuleTypeGetValue(key);
-    }
-
     RedisModuleString *str = RedisModule_CreateString(ctx, NULL, 0);
-    TrieTypePrettyPrint(ctx, str, n);
+    if (type != REDISMODULE_KEYTYPE_EMPTY) {
+        n = RedisModule_ModuleTypeGetValue(key);
+
+        TrieTypePrettyPrint(ctx, str, n);
+    }
 
     RedisModule_ReplyWithString(ctx, str);
 
@@ -311,7 +307,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx, "hello.trie.pp",
-            HelloTriePrettyPrint_RedisCommand, "write deny-oom", 1, 1, 1) == REDISMODULE_ERR)
+            HelloTriePrettyPrint_RedisCommand, "readonly deny-oom", 1, 1, 1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx, "hello.trie.exist",
