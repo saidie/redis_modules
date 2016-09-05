@@ -9,26 +9,23 @@ typedef struct TrieTypeNode {
     struct TrieTypeNode* children[26];
 } TrieTypeNode;
 
-void TrieTypeInsert(TrieTypeNode *n, const char *word) {
+TrieTypeNode *TrieTypeFind(TrieTypeNode *n, const char *word, uint8_t create) {
     while(*word) {
         uint8_t i = *word - 'a';
         if (!n->children[i])
-            n->children[i] = RedisModule_Calloc(1, sizeof(TrieTypeNode));
-        n = n->children[i];
-        ++word;
-    }
-    n->terminal = 1;
-}
-
-TrieTypeNode *TrieTypeSearch(TrieTypeNode *n, const char *word) {
-    while (*word) {
-        uint8_t i = *word - 'a';
-        if (!n->children[i])
-            return NULL;
+            if (create)
+                n->children[i] = RedisModule_Calloc(1, sizeof(TrieTypeNode));
+            else
+                return NULL;
         n = n->children[i];
         ++word;
     }
     return n;
+}
+
+void TrieTypeInsert(TrieTypeNode *n, const char *word) {
+    n = TrieTypeFind(n, word, 1);
+    n->terminal = 1;
 }
 
 size_t TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char **result) {
@@ -63,7 +60,7 @@ size_t TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char **
 }
 
 int TrieTypeExist(TrieTypeNode *n, const char *word) {
-    n = TrieTypeSearch(n, word);
+    n = TrieTypeFind(n, word, 0);
     return n && n->terminal;
 }
 
