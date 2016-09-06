@@ -43,7 +43,6 @@ char *TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char *re
     }
 
     while (!n->terminal) {
-        result = RedisModule_Realloc(result, sizeof(char) * (*newlen + 1));
         result[*newlen] = 'a';
 
         TrieTypeNode** cursor = n->children;
@@ -52,6 +51,7 @@ char *TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char *re
 
         n = *cursor;
         ++*newlen;
+        result = RedisModule_Realloc(result, sizeof(char) * (*newlen + 1));
     }
     result[*newlen] = '\0';
 
