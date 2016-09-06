@@ -64,11 +64,11 @@ int TrieTypeExist(TrieTypeNode *n, const char *word) {
 }
 
 char *TrieTypePrettyPrint(TrieTypeNode *n, char *buffer, size_t *len) {
-    buffer[*len++] = '(';
+    buffer[(*len)++] = '(';
     buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
 
     if (n->terminal) {
-        buffer[*len++] = '$';
+        buffer[(*len)++] = '$';
         buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
     }
 
@@ -76,14 +76,14 @@ char *TrieTypePrettyPrint(TrieTypeNode *n, char *buffer, size_t *len) {
     char ch = 'a';
     while (cursor != n->children + 26) {
         if (*cursor) {
-            buffer[*len++] = ch;
+            buffer[(*len)++] = ch;
             buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
-            TrieTypePrettyPrint(*cursor, buffer, len);
+            buffer = TrieTypePrettyPrint(*cursor, buffer, len);
         }
         ++cursor;
         ++ch;
     }
-    buffer[*len++] = ')';
+    buffer[(*len)++] = ')';
     buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
 
     return buffer;
@@ -222,14 +222,14 @@ int HelloTriePrettyPrint_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
 
     TrieTypeNode *n;
     size_t len = 0;
-    char *buffer = RedisModule_Calloc(len + 1, sizeof(char));
+    char *buffer = RedisModule_Calloc(1, sizeof(char));
     if (type != REDISMODULE_KEYTYPE_EMPTY) {
         n = RedisModule_ModuleTypeGetValue(key);
 
         buffer = TrieTypePrettyPrint(n, buffer, &len);
     }
 
-    RedisModuleString *str = RedisModule_CreateString(ctx, buffer, len-1);
+    RedisModuleString *str = RedisModule_CreateString(ctx, buffer, len);
     RedisModule_ReplyWithString(ctx, str);
     RedisModule_FreeString(ctx, str);
 
