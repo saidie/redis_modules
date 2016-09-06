@@ -29,24 +29,19 @@ void TrieTypeInsert(TrieTypeNode *n, const char *word) {
 
 char *TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char *result, size_t *newlen) {
     *newlen = 0;
-
     result = RedisModule_Realloc(result, sizeof(char) * (len + 1));
-    while (*prefix) {
-        int i = *prefix - 'a';
-        if (!n->children[i])
-            return NULL;
-        result[(*newlen)++] = *prefix;
 
-        n = n->children[i];
-        ++prefix;
+    while (*prefix) {
+        n = n->children[*prefix - 'a'];
+        if (!n) return NULL;
+        result[(*newlen)++] = *(prefix++);
     }
 
     while (!n->terminal) {
         result[*newlen] = 'a';
 
         TrieTypeNode** cursor = n->children;
-        while (!*cursor)
-            ++cursor, ++result[*newlen];
+        while (!*cursor) ++cursor, ++result[*newlen];
 
         n = *cursor;
         ++*newlen;
@@ -103,11 +98,9 @@ void HelloTrieType_LoadRecursive(RedisModuleIO *rdb, TrieTypeNode *n) {
 }
 
 void *HelloTrieType_Load(RedisModuleIO *rdb, int encver) {
-    if (encver != 0)
-        return NULL;
+    if (encver != 0) return NULL;
 
-    TrieTypeNode *n;
-    n = RedisModule_Calloc(1, sizeof(*n));
+    TrieTypeNode *n = RedisModule_Calloc(1, sizeof(*n));
     HelloTrieType_LoadRecursive(rdb, n);
     return n;
 }
@@ -115,12 +108,10 @@ void *HelloTrieType_Load(RedisModuleIO *rdb, int encver) {
 void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
     TrieTypeNode *n = value;
 
-    uint64_t u;
+    uint64_t u = 0;
     TrieTypeNode** cursor = n->children + 26;
-    while (cursor != n->children) {
-        --cursor;
-        if (*cursor)
-            u |= 1;
+    while (cursor-- != n->children) {
+        if (*cursor) u |= 1;
         u <<= 1;
     }
     u |= n->terminal;
@@ -128,8 +119,7 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
     RedisModule_SaveUnsigned(rdb, u);
 
     while(u >>= 1) {
-        if (u & 1)
-            HelloTrieType_Save(rdb, *cursor);
+        if (u & 1) HelloTrieType_Save(rdb, *cursor);
         ++cursor;
     }
 }
@@ -170,8 +160,7 @@ void HelloTrieType_Free(void *value) {
 
     TrieTypeNode** cursor = n->children;
     while (cursor != n->children + 26) {
-        if (*cursor)
-            HelloTrieType_Free(*cursor);
+        if (*cursor) HelloTrieType_Free(*cursor);
         ++cursor;
     }
     RedisModule_Free(n->children);
@@ -181,8 +170,7 @@ void HelloTrieType_Free(void *value) {
 int HelloTrieInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 3) return RedisModule_WrongArity(ctx);
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1],
-        REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
 
     int type = RedisModule_KeyType(key);
     if (type != REDISMODULE_KEYTYPE_EMPTY && RedisModule_ModuleTypeGetType(key) != TrieType)
@@ -262,8 +250,6 @@ int HelloTrieExist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     RedisModule_ReplyWithLongLong(ctx, res);
 
     RedisModule_CloseKey(key);
-
-    RedisModule_ReplicateVerbatim(ctx);
 
     return REDISMODULE_OK;
 }
