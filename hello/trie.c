@@ -2,7 +2,6 @@
 #include <redismodule.h>
 
 static RedisModuleType *TrieType;
-static char buffer[1024];
 
 typedef struct TrieTypeNode {
     uint8_t terminal;
@@ -126,7 +125,9 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
     }
 }
 
-void HelloTrieType_RewriteRecursive(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, int depth) {
+char *HelloTrieType_RewriteRecursive(RedisModuleIO *aof, RedisModuleString *key, TrieTypeNode *n, char *buffer, int depth) {
+    buffer = RedisModule_Realloc(buffer, sizeof(char) * (depth + 1));
+
     if (n->terminal && depth > 0) {
         buffer[depth] = '\0';
         RedisModule_EmitAOF(aof, "hello.trie.insert", "sc", key, buffer);
@@ -137,15 +138,19 @@ void HelloTrieType_RewriteRecursive(RedisModuleIO *aof, RedisModuleString *key, 
     while (cursor != n->children + 26) {
         if (*cursor) {
             buffer[depth] = ch;
-            HelloTrieType_RewriteRecursive(aof, key, *cursor, depth+1);
+            buffer = HelloTrieType_RewriteRecursive(aof, key, *cursor, buffer, depth+1);
         }
         ++cursor;
         ++ch;
     }
+
+    return buffer;
 }
 
 void HelloTrieType_Rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-    HelloTrieType_RewriteRecursive(aof, key, value, 0);
+    char *buffer = RedisModule_Calloc(1, sizeof(char));
+    buffer = HelloTrieType_RewriteRecursive(aof, key, value, buffer, 0);
+    RedisModule_Free(buffer);
 }
 
 void HelloTrieType_Digest(RedisModuleDigest *digest, void *value) {
