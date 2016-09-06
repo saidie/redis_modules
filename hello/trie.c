@@ -34,12 +34,11 @@ char *TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char *re
     while (*prefix) {
         int i = *prefix - 'a';
         if (!n->children[i])
-            return 0;
-        result[*newlen] = *prefix;
+            return NULL;
+        result[(*newlen)++] = *prefix;
 
         n = n->children[i];
         ++prefix;
-        ++*newlen;
     }
 
     while (!n->terminal) {
