@@ -28,35 +28,35 @@ void TrieTypeInsert(TrieTypeNode *n, const char *word) {
     n->terminal = 1;
 }
 
-size_t TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char **result) {
-    size_t newlen = 0;
+char *TrieTypeComplete(TrieTypeNode *n, const char *prefix, size_t len, char *result, size_t *newlen) {
+    *newlen = 0;
 
-    *result = RedisModule_Realloc(*result, sizeof(char) * (len + 1));
+    result = RedisModule_Realloc(result, sizeof(char) * (len + 1));
     while (*prefix) {
         int i = *prefix - 'a';
         if (!n->children[i])
             return 0;
-        (*result)[newlen] = *prefix;
+        result[*newlen] = *prefix;
 
         n = n->children[i];
         ++prefix;
-        ++newlen;
+        ++*newlen;
     }
 
     while (!n->terminal) {
-        *result = RedisModule_Realloc(*result, sizeof(char) * (newlen + 1));
-        (*result)[newlen] = 'a';
+        result = RedisModule_Realloc(result, sizeof(char) * (*newlen + 1));
+        result[*newlen] = 'a';
 
         TrieTypeNode** cursor = n->children;
         while (!*cursor)
-            ++cursor, ++(*result)[newlen];
+            ++cursor, ++result[*newlen];
 
         n = *cursor;
-        ++newlen;
+        ++*newlen;
     }
-    (*result)[newlen] = '\0';
+    result[*newlen] = '\0';
 
-    return newlen;
+    return result;
 }
 
 int TrieTypeExist(TrieTypeNode *n, const char *word) {
@@ -270,7 +270,7 @@ int HelloTrieComplete_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         const char *prefix = RedisModule_StringPtrLen(argv[2], &len);
         char *result = RedisModule_Alloc(sizeof(char) * (len + 1));
 
-        if (len = TrieTypeComplete(n, prefix, len, &result)) {
+        if (result = TrieTypeComplete(n, prefix, len, result, &len)) {
             RedisModuleString *s = RedisModule_CreateString(ctx, result, len);
             RedisModule_ReplyWithString(ctx, s);
             RedisModule_Free(s);
