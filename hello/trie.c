@@ -83,16 +83,14 @@ void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, TrieTypeNo
 void HelloTrieType_LoadRecursive(RedisModuleIO *rdb, TrieTypeNode *n) {
     uint64_t u = RedisModule_LoadUnsigned(rdb);
     n->terminal = u & 1;
-    u >>= 1;
 
     TrieTypeNode** cursor = n->children;
-    while (u) {
+    while (u >>= 1) {
         if (u & 1) {
             *cursor = RedisModule_Calloc(1, sizeof(**cursor));
             HelloTrieType_LoadRecursive(rdb, *cursor);
         }
         ++cursor;
-        u >>= 1;
     }
 }
 
@@ -121,12 +119,10 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
 
     RedisModule_SaveUnsigned(rdb, u);
 
-    u >>= 1;
-    while(u) {
+    while(u >>= 1) {
         if (u & 1)
             HelloTrieType_Save(rdb, *cursor);
         ++cursor;
-        u >>= 1;
     }
 }
 
