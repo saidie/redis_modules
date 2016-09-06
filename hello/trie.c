@@ -221,16 +221,19 @@ int HelloTriePrettyPrint_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
 
     TrieTypeNode *n;
-    RedisModuleString *str = RedisModule_CreateString(ctx, NULL, 0);
+    size_t len = 0;
+    char *buffer = RedisModule_Calloc(len + 1, sizeof(char));
     if (type != REDISMODULE_KEYTYPE_EMPTY) {
         n = RedisModule_ModuleTypeGetValue(key);
 
-        TrieTypePrettyPrint(ctx, str, n);
+        buffer = TrieTypePrettyPrint(n, buffer, &len);
     }
 
+    RedisModuleString *str = RedisModule_CreateString(ctx, buffer, len-1);
     RedisModule_ReplyWithString(ctx, str);
-
     RedisModule_FreeString(ctx, str);
+
+    RedisModule_Free(buffer);
 
     RedisModule_CloseKey(key);
 
