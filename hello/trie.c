@@ -63,20 +63,30 @@ int TrieTypeExist(TrieTypeNode *n, const char *word) {
     return n && n->terminal;
 }
 
-void TrieTypePrettyPrint(RedisModuleCtx *ctx, RedisModuleString *str, TrieTypeNode *n) {
-    RedisModule_StringAppendBuffer(ctx, str, "(", 1);
-    if (n->terminal) RedisModule_StringAppendBuffer(ctx, str, "$", 1);
+char *TrieTypePrettyPrint(TrieTypeNode *n, char *buffer, size_t *len) {
+    buffer[*len++] = '(';
+    buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
+
+    if (n->terminal) {
+        buffer[*len++] = '$';
+        buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
+    }
+
     TrieTypeNode** cursor = n->children;
-    char s[2] = "a";
+    char ch = 'a';
     while (cursor != n->children + 26) {
         if (*cursor) {
-            RedisModule_StringAppendBuffer(ctx, str, s, 1);
-            TrieTypePrettyPrint(ctx, str, *cursor);
+            buffer[*len++] = ch;
+            buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
+            TrieTypePrettyPrint(*cursor, buffer, len);
         }
         ++cursor;
-        ++s[0];
+        ++ch;
     }
-    RedisModule_StringAppendBuffer(ctx, str, ")", 1);
+    buffer[*len++] = ')';
+    buffer = RedisModule_Realloc(buffer, sizeof(char) * (*len + 1));
+
+    return buffer;
 }
 
 void HelloTrieType_LoadRecursive(RedisModuleIO *rdb, TrieTypeNode *n) {
