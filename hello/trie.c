@@ -119,8 +119,8 @@ void HelloTrieType_Save(RedisModuleIO *rdb, void *value) {
     RedisModule_SaveUnsigned(rdb, u);
 
     while(u >>= 1) {
-        if (u & 1) HelloTrieType_Save(rdb, *cursor);
         ++cursor;
+        if (u & 1) HelloTrieType_Save(rdb, *cursor);
     }
 }
 
